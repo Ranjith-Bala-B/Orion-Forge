@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    font-family: 'Inter', sans-serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Sora', sans-serif;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #FAFBFC;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #5B3DF5;
+}
+
+/* Utilities */
+@layer utilities {
+  .glass-pill {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(229, 231, 235, 0.8);
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* CMS Read-Only Mode Overrides */
+.cms-readonly-mode input[type="text"],
+.cms-readonly-mode input[type="url"],
+.cms-readonly-mode input[type="email"],
+.cms-readonly-mode input[type="tel"],
+.cms-readonly-mode input[type="number"],
+.cms-readonly-mode textarea {
+  pointer-events: none !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+  resize: none !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  margin-top: 0 !important;
+  box-shadow: none !important;
+  color: #0f172a !important; /* slate-900 */
+}
+
+/* Allow scrolling in textareas but we will disable typing via React readOnly prop */
+.cms-readonly-mode textarea {
+  pointer-events: auto !important;
+}
+
+/* Hide inputs that can't look like text */
+.cms-readonly-mode input[type="file"] {
+  display: none !important;
+}
+
+/* Hide specific editing controls */
+.cms-readonly-mode .cms-edit-only {
+  display: none !important;
+}
+
