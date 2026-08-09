@@ -9,16 +9,21 @@ export const useAuth = () => {
   }, []);
 
   const login = (password: string, rememberDevice: boolean): boolean => {
-    const success = authService.login(password, rememberDevice);
-    if (success) {
-      setIsAuthenticated(true);
+    const isPasswordCorrect = authService.verifyPassword(password);
+    if (isPasswordCorrect) {
+      authService.login(password, rememberDevice).then(success => {
+        if (success) {
+          setIsAuthenticated(true);
+        }
+      });
     }
-    return success;
+    return isPasswordCorrect;
   };
 
   const logout = () => {
-    authService.logout();
-    setIsAuthenticated(false);
+    authService.logout().then(() => {
+      setIsAuthenticated(false);
+    });
   };
 
   return {

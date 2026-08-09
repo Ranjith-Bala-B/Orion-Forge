@@ -1,27 +1,60 @@
 import { useState, useEffect } from 'react';
 import { Hackathon, HistoryEntry, NotificationItem, VaultSettings } from '../types/vault';
 import { vaultService } from '../services/vaultService';
+import { supabase } from '../config/supabase';
 
 export const useVault = () => {
-  const [hackathons, setHackathons] = useState<Hackathon[]>(() => vaultService.getHackathons());
-  const [history, setHistory] = useState<HistoryEntry[]>(() => vaultService.getHistory());
-  const [notifications, setNotifications] = useState<NotificationItem[]>(() => vaultService.getNotifications());
+  const [hackathons, setHackathons] = useState<Hackathon[]>([]);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [settings, setSettings] = useState<VaultSettings>(() => vaultService.getSettings());
 
-  const refreshData = () => {
-    setHackathons(vaultService.getHackathons());
-    setHistory(vaultService.getHistory());
-    setNotifications(vaultService.getNotifications());
+  const refreshData = async () => {
+    const [h, hist, notifs] = await Promise.all([
+      vaultService.getHackathons(),
+      vaultService.getHistory(),
+      vaultService.getNotifications()
+    ]);
+    setHackathons(h);
+    setHistory(hist);
+    setNotifications(notifs);
     setSettings(vaultService.getSettings());
   };
 
   useEffect(() => {
     refreshData();
+
+    // Setup Supabase Realtime subscriptions
+    const channel = supabase.channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public' },
+        (payload) => {
+          // Instead of piecemeal updates, just refresh all data on any table change
+          // For a team of 4 members, this is perfectly fine and ensures all nested data is consistent.
+          refreshData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
-  const saveHackathon = (item: Hackathon) => {
-    const updated = vaultService.saveHackathonItem(item);
-    setHackathons([...updated]);
+  const saveHackathon = async (item: Hackathon) => {
+    // Optimistic update
+    setHackathons(prev => {
+      const idx = prev.findIndex(h => h.id === item.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = item;
+        return next;
+      }
+      return [item, ...prev];
+    });
+
+    await vaultService.saveHackathonItem(item);
     
     // Auto-update history entry if it exists
     const historyEntry = history.find(h => h.hackathonId === item.id);
@@ -46,22 +79,27 @@ export const useVault = () => {
           ...(historyEntry.hackathonLinks || []).filter(hl => hl.id !== 'official-website' && hl.id !== 'registration-portal' && !item.links.some(il => il.id === hl.id))
         ],
       };
-      // We use the vaultService directly here and then update state, 
-      // instead of calling saveHistoryEntry which triggers another state update 
-      // and might cause race conditions with the current history state closure.
-      const updatedHistory = vaultService.saveHistoryItem(updatedEntry);
-      setHistory([...updatedHistory]);
+      await vaultService.saveHistoryItem(updatedEntry);
     }
   };
 
-  const deleteHackathon = (id: string) => {
-    const updated = vaultService.deleteHackathonItem(id);
-    setHackathons([...updated]);
+  const deleteHackathon = async (id: string) => {
+    setHackathons(prev => prev.filter(h => h.id !== id));
+    await vaultService.deleteHackathonItem(id);
   };
 
-  const saveHistoryEntry = (entry: HistoryEntry) => {
-    const updated = vaultService.saveHistoryItem(entry);
-    setHistory([...updated]);
+  const saveHistoryEntry = async (entry: HistoryEntry) => {
+    setHistory(prev => {
+      const idx = prev.findIndex(h => h.id === entry.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = entry;
+        return next;
+      }
+      return [entry, ...prev];
+    });
+    
+    await vaultService.saveHistoryItem(entry);
 
     // Auto-update hackathon if it exists
     const hackathon = hackathons.find(h => h.id === entry.hackathonId);
@@ -80,19 +118,18 @@ export const useVault = () => {
         links: customLinks,
       };
       
-      const updatedHackathons = vaultService.saveHackathonItem(updatedHackathon);
-      setHackathons([...updatedHackathons]);
+      await vaultService.saveHackathonItem(updatedHackathon);
     }
   };
 
-  const deleteHistoryEntry = (id: string) => {
-    const updated = vaultService.deleteHistoryItem(id);
-    setHistory([...updated]);
+  const deleteHistoryEntry = async (id: string) => {
+    setHistory(prev => prev.filter(h => h.id !== id));
+    await vaultService.deleteHistoryItem(id);
   };
 
-  const markNotificationRead = (id: string) => {
-    const updated = vaultService.markNotificationRead(id);
-    setNotifications([...updated]);
+  const markNotificationRead = async (id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    await vaultService.markNotificationRead(id);
   };
 
   const updateSettings = (newSettings: VaultSettings) => {
