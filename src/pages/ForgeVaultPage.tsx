@@ -211,7 +211,8 @@ export const ForgeVaultPage: React.FC<ForgeVaultPageProps> = ({ onNavigate }) =>
           setCmsInitialDrawer('achievement');
           setActiveTab('cms');
         }}
-        onViewPublicDashboard={() => {
+        onLockVault={() => {
+          logout();
           if (onNavigate) {
             onNavigate('/');
           } else {

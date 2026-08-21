@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trophy, CheckSquare, FileUp, Award, Image, Code2, Sparkles } from 'lucide-react';
+import { Plus, Trophy, CheckSquare, FileUp, Award, Image, Code2, Sparkles, Lock } from 'lucide-react';
 import { VaultTab } from './VaultSidebar';
 
 interface QuickActionButtonProps {
@@ -8,7 +8,7 @@ interface QuickActionButtonProps {
   onOpenNewHackathonModal: () => void;
   onAddPublicProject: () => void;
   onAddAchievement: () => void;
-  onViewPublicDashboard: () => void;
+  onLockVault: () => void;
 }
 
 export const QuickActionButton: React.FC<QuickActionButtonProps> = ({
@@ -16,7 +16,7 @@ export const QuickActionButton: React.FC<QuickActionButtonProps> = ({
   onOpenNewHackathonModal,
   onAddPublicProject,
   onAddAchievement,
-  onViewPublicDashboard,
+  onLockVault,
 }) => {
   const [open, setOpen] = useState(false);
 
@@ -74,11 +74,11 @@ export const QuickActionButton: React.FC<QuickActionButtonProps> = ({
               </button>
 
               <button
-                onClick={() => handleAction(onViewPublicDashboard)}
+                onClick={() => handleAction(onLockVault)}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-slate-900 text-white text-xs font-bold shadow-lg hover:bg-[#5B3DF5] transition-colors"
               >
-                <Sparkles className="h-4 w-4 text-[#38BDF8]" />
-                <span>View Public Dashboard</span>
+                <Lock className="h-4 w-4 text-[#38BDF8]" />
+                <span>Lock Vault</span>
               </button>
             </motion.div>
           )}

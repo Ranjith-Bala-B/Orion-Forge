@@ -88,7 +88,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-[85vh] pt-28 pb-20 bg-[#FAFBFC] text-slate-900 relative overflow-hidden flex items-center justify-end pr-24 md:pr-36 lg:pr-52">
+    <div className="min-h-[85vh] pt-28 pb-20 bg-[#FAFBFC] text-slate-900 relative overflow-hidden flex items-center justify-center px-4 md:justify-end md:pr-36 lg:pr-52">
       {/* Background Videos */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
         <video

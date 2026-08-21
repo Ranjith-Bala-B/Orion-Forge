@@ -452,12 +452,12 @@ const OrionForgeCMSInner: React.FC<OrionForgeCMSProps & { initialData: CMSData }
       )}
 
       {/* Section Selector Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto scrollbar-hide">
         {(['hero', 'team', 'projects', 'achievements', 'stats', 'footer'] as const).map((section) => (
           <button
             key={section}
             onClick={() => setActiveSection(section)}
-            className={`px-5 py-2 text-xs font-bold rounded-full capitalize transition-colors ${
+            className={`px-5 py-2 text-xs font-bold rounded-full capitalize transition-colors flex-shrink-0 whitespace-nowrap ${
               activeSection === section
                 ? 'bg-[#3B82F6] text-white shadow-sm'
                 : 'bg-white text-slate-700 border border-slate-200'
