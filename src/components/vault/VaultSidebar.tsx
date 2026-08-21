@@ -101,7 +101,14 @@ export const VaultSidebar: React.FC<VaultSidebarProps> = ({
         {/* Bottom Section: Logout */}
         <div className="pt-4 border-t border-slate-100">
           <button
-            onClick={onLogout}
+            onClick={() => {
+              onLogout();
+              if (onNavigate) {
+                onNavigate('/');
+              } else {
+                window.location.href = '/';
+              }
+            }}
             className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-2xl transition-colors"
           >
             <LogOut className="h-4 w-4" />

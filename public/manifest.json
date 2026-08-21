@@ -1,0 +1,17 @@
+{
+  "name": "Orion Forge",
+  "short_name": "Orion Forge",
+  "description": "Orion Forge - Innovation Lab",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAFBFC",
+  "theme_color": "#5B3DF5",
+  "icons": [
+    {
+      "src": "/logo.jpeg",
+      "sizes": "any",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}
