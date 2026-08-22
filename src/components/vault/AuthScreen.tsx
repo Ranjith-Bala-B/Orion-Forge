@@ -24,7 +24,16 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
   React.useEffect(() => {
     if (authStatus === 'idle') {
       setActiveVideo(1);
-      video1Ref.current?.play().catch(() => {});
+      
+      const video1 = video1Ref.current;
+      if (video1) {
+        video1.muted = false;
+        video1.volume = 1.0;
+        video1.play().catch((error) => {
+          console.warn("Forge Vault: Audible autoplay was blocked by the browser.", error);
+        });
+      }
+
       if (video2Ref.current) {
         video2Ref.current.pause();
         video2Ref.current.currentTime = 0;
@@ -39,7 +48,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
   const handleUnlock = (e: React.MouseEvent) => {
     e.preventDefault();
     console.log("Unlock button clicked");
-    
+
     const success = authService.verifyPassword(password);
     console.log("Password validation result:", success);
 
@@ -47,7 +56,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
       setAuthStatus('granted');
       setActiveVideo(2);
       video1Ref.current?.pause();
-      
+
       const video2 = video2Ref.current;
       if (video2) {
         console.log("Starting video2 with audio");
@@ -69,7 +78,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
       setTimeout(() => setShake(false), 500);
 
       video1Ref.current?.pause();
-      
+
       const video3 = video3Ref.current;
       if (video3) {
         console.log("Starting video3 with audio");
@@ -95,16 +104,18 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
           ref={video1Ref}
           src={video1Url}
           autoPlay
-          muted
           loop
           playsInline
-          style={{ filter: 'brightness(1.25) saturate(1.05)' }}
+          preload="auto"
+          style={{ filter: 'brightness(1.4) saturate(1.05)', transform: 'translateZ(0)', willChange: 'transform' }}
           className={`absolute inset-0 w-full h-full object-cover pointer-events-none ${activeVideo === 1 ? 'opacity-100' : 'opacity-0'}`}
         />
         <video
           ref={video2Ref}
           src={video2Url}
           playsInline
+          preload="auto"
+          style={{ filter: 'brightness(1.2) saturate(1.05)', transform: 'translateZ(0)', willChange: 'transform' }}
           onEnded={() => {
             onLogin(password, false);
           }}
@@ -117,9 +128,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
           ref={video3Ref}
           src={video3Url}
           playsInline
+          preload="auto"
+          style={{ filter: 'brightness(1.2) saturate(1.05)', transform: 'translateZ(0)', willChange: 'transform' }}
           onEnded={() => {
             setActiveVideo(1);
-            video1Ref.current?.play().catch(() => {});
+            setAuthStatus('idle');
+            setPassword('');
+            // Trigger video1 again which invokes the same strict unmute rule via useEffect
           }}
           className={`absolute inset-0 w-full h-full object-cover pointer-events-none ${activeVideo === 3 ? 'opacity-100' : 'opacity-0'}`}
         />
@@ -215,8 +230,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin }) => {
                 <h3 className="font-heading text-lg font-bold text-red-600 uppercase tracking-widest">Access Denied</h3>
                 <p className="text-xs text-red-500 font-medium mb-1">ILLEGAL ENTRY</p>
                 <p className="text-xs font-bold text-red-500 uppercase tracking-wider">Forge Security Protocol Active</p>
-                <p className="text-xs text-red-500 font-medium mb-1">Unauthorized Forge Member Detected.<br/>Entry Restricted.</p>
-                
+                <p className="text-xs text-red-500 font-medium mb-1">Unauthorized Forge Member Detected.<br />Entry Restricted.</p>
+
                 <button
                   type="button"
                   onClick={() => {
