@@ -116,9 +116,8 @@ export const cmsService = {
       };
     } catch (error) {
       console.error("Error fetching CMS Data from Supabase:", error);
-      // Fallback to local storage if Supabase fails (optional)
-      const raw = localStorage.getItem(CMS_STORAGE_KEY);
-      if (raw) return JSON.parse(raw);
+      // Removed local storage fallback to ensure Supabase is the true source of truth
+      // If the data is empty or fails, we throw the error and let the UI handle the failure state.
       throw error;
     }
   },
@@ -201,7 +200,29 @@ export const cmsService = {
         }
       }
 
-      // 2. Save Data to Supabase
+      // 2. Sync Deletions (Remove items that were deleted in the CMS)
+      const syncTableDeletions = async (tableName: string, currentItems: any[]) => {
+        const { data: existingRecords, error } = await supabase.from(tableName).select('id');
+        if (error) throw error;
+        if (existingRecords) {
+          const currentIds = currentItems.map(item => item.id);
+          const idsToDelete = existingRecords.map((r: any) => r.id).filter((id: string) => !currentIds.includes(id));
+          if (idsToDelete.length > 0) {
+            const { error: delError } = await supabase.from(tableName).delete().in('id', idsToDelete);
+            if (delError) throw delError;
+          }
+        }
+      };
+
+      await Promise.all([
+        syncTableDeletions('team_members', data.team),
+        syncTableDeletions('projects', data.projects),
+        syncTableDeletions('achievements', data.achievements),
+        syncTableDeletions('stats', data.stats),
+        syncTableDeletions('timeline', data.timeline)
+      ]);
+
+      // 3. Save Data to Supabase
       
       await supabase.from('site_config').upsert({
         id: 1,
