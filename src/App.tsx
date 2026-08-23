@@ -6,6 +6,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 import { ROUTES } from './constants/routes';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { migrateToSupabase } from './utils/supabaseMigration';
+import { supabase } from './config/supabase';
 
 export function App() {
   const [currentPath, setCurrentPath] = useState<string>(() => {
@@ -32,10 +33,22 @@ export function App() {
     window.addEventListener('storage', handleStorage);
     window.addEventListener('cms_updated', handleCustomCmsUpdate);
     
+    // Listen for database changes to update live website immediately
+    const channel = supabase.channel('app-db-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public' },
+        () => {
+          handleCustomCmsUpdate();
+        }
+      )
+      .subscribe();
+    
     return () => {
       window.removeEventListener('popstate', handlePopState);
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('cms_updated', handleCustomCmsUpdate);
+      supabase.removeChannel(channel);
     };
   }, []);
 

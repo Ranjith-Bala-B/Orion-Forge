@@ -193,6 +193,7 @@ const OrionForgeCMSInner: React.FC<OrionForgeCMSProps & { initialData: CMSData }
   const [achievementToDelete, setAchievementToDelete] = useState<number | null>(null);
   const [editModes, setEditModes] = useState<Record<string, boolean>>({});
   const [showPublishAlert, setShowPublishAlert] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   React.useEffect(() => {
     if (initialSection) setActiveSection(initialSection);
@@ -403,15 +404,18 @@ const OrionForgeCMSInner: React.FC<OrionForgeCMSProps & { initialData: CMSData }
     </div>
   );
 
-  const handleSave = () => {
+  const handleSave = async () => {
     try {
-      cmsService.saveCMSData(cmsData);
+      setIsSaving(true);
+      await cmsService.saveCMSData(cmsData);
       setSavedSuccess(true);
       setShowPublishAlert(false);
       setTimeout(() => setSavedSuccess(false), 3000);
     } catch (e) {
       console.error("Save failed:", e);
       alert("Failed to publish CMS changes. The data size might exceed local storage limits. Try reducing image sizes.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -1362,9 +1366,10 @@ const OrionForgeCMSInner: React.FC<OrionForgeCMSProps & { initialData: CMSData }
                   </button>
                   <button
                     onClick={handleSave}
-                    className="flex-1 py-3 px-4 rounded-xl font-bold text-white bg-red-600 hover:bg-red-700 shadow-[0_0_20px_rgba(220,38,38,0.3)] transition-all"
+                    disabled={isSaving}
+                    className={`flex-1 py-3 px-4 rounded-xl font-bold text-white transition-all ${isSaving ? 'bg-red-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700 shadow-[0_0_20px_rgba(220,38,38,0.3)]'}`}
                   >
-                    Yes, Publish Now
+                    {isSaving ? 'Publishing...' : 'Yes, Publish Now'}
                   </button>
                 </div>
               </div>
