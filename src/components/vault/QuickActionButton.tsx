@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Trophy, CheckSquare, FileUp, Award, Image, Code2, Sparkles, Lock } from 'lucide-react';
 import { VaultTab } from './VaultSidebar';
+import { AIAssistant } from './AIAssistant';
 
 interface QuickActionButtonProps {
   onSelectTab: (tab: VaultTab) => void;
@@ -19,6 +20,7 @@ export const QuickActionButton: React.FC<QuickActionButtonProps> = ({
   onLockVault,
 }) => {
   const [open, setOpen] = useState(false);
+  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
 
   const handleAction = (action: () => void) => {
     setOpen(false);
@@ -29,7 +31,7 @@ export const QuickActionButton: React.FC<QuickActionButtonProps> = ({
     <div className="fixed bottom-8 right-8 z-[9000] flex items-end gap-4">
       {/* Future AI Assistant Button */}
       <motion.button
-        onClick={() => { /* Future API integration */ }}
+        onClick={() => setIsAssistantOpen(!isAssistantOpen)}
         aria-label="AI Assistant"
         className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-[#5B3DF5] to-[#38BDF8] text-white shadow-[0_8px_30px_rgba(91,61,245,0.4)] hover:shadow-[0_12px_35px_rgba(56,189,248,0.6)] z-10"
         animate={{ x: open ? -80 : 0 }}
@@ -96,6 +98,8 @@ export const QuickActionButton: React.FC<QuickActionButtonProps> = ({
           <Plus className="h-7 w-7" />
         </motion.button>
       </div>
+      
+      <AIAssistant isOpen={isAssistantOpen} onClose={() => setIsAssistantOpen(false)} />
     </div>
   );
 };

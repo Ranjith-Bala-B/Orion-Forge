@@ -36,6 +36,7 @@ export const HackathonManager: React.FC<HackathonManagerProps> = ({
   const [type, setType] = useState<HackathonType>('Hackathon');
   const [organizer, setOrganizer] = useState('');
   const [mode, setMode] = useState<HackathonMode>('Hybrid');
+  const [platform, setPlatform] = useState('Unstop');
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [registrationUrl, setRegistrationUrl] = useState('');
   const [rounds, setRounds] = useState<Round[]>([]);
@@ -48,6 +49,7 @@ export const HackathonManager: React.FC<HackathonManagerProps> = ({
     setType('Hackathon');
     setOrganizer('');
     setMode('Hybrid');
+    setPlatform('Unstop');
     setWebsiteUrl('');
     setRegistrationUrl('');
     setRounds([]);
@@ -62,6 +64,7 @@ export const HackathonManager: React.FC<HackathonManagerProps> = ({
     setType(h.type || 'Hackathon');
     setOrganizer(h.organizer);
     setMode(h.mode);
+    setPlatform(h.platform || 'Unstop');
     setWebsiteUrl(h.websiteUrl);
     setRegistrationUrl(h.registrationUrl);
     setRounds(h.rounds || []);
@@ -79,6 +82,7 @@ export const HackathonManager: React.FC<HackathonManagerProps> = ({
       type,
       organizer,
       mode,
+      platform,
       websiteUrl,
       registrationUrl,
       problemStatement: editingId ? hackathons.find((h) => h.id === editingId)?.problemStatement || '' : '',
@@ -302,13 +306,43 @@ export const HackathonManager: React.FC<HackathonManagerProps> = ({
                       <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Organized By *</label>
                       <input type="text" required value={organizer} onChange={(e) => setOrganizer(e.target.value)} placeholder="e.g. Ministry of Education & AICTE" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#3B82F6]" />
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Event Mode</label>
-                      <select value={mode} onChange={(e) => setMode(e.target.value as HackathonMode)} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#3B82F6]">
-                        <option value="Online">Online</option>
-                        <option value="Offline">Offline</option>
-                        <option value="Hybrid">Hybrid</option>
-                      </select>
+                    <div className="flex gap-2">
+                      <div className="w-1/3">
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Event Mode</label>
+                        <select value={mode} onChange={(e) => setMode(e.target.value as HackathonMode)} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#3B82F6]">
+                          <option value="Online">Online</option>
+                          <option value="Offline">Offline</option>
+                          <option value="Hybrid">Hybrid</option>
+                        </select>
+                      </div>
+                      <div className="w-2/3">
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Event Platform</label>
+                        <div className="flex gap-2">
+                          <select
+                            value={['Unstop', 'Hack2Skill', 'Devpost', 'Naukri', 'Devfolio', 'Hackculture'].includes(platform) ? platform : 'Custom'}
+                            onChange={(e) => setPlatform(e.target.value)}
+                            className={`${['Unstop', 'Hack2Skill', 'Devpost', 'Naukri', 'Devfolio', 'Hackculture'].includes(platform) ? 'w-full' : 'w-1/2'} rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#3B82F6]`}
+                          >
+                            <option value="Unstop">Unstop</option>
+                            <option value="Hack2Skill">Hack2Skill</option>
+                            <option value="Devpost">Devpost</option>
+                            <option value="Naukri">Naukri</option>
+                            <option value="Devfolio">Devfolio</option>
+                            <option value="Hackculture">Hackculture</option>
+                            <option value="Custom">Custom</option>
+                          </select>
+                          {!['Unstop', 'Hack2Skill', 'Devpost', 'Naukri', 'Devfolio', 'Hackculture'].includes(platform) && (
+                            <input
+                              type="text"
+                              required
+                              value={platform === 'Custom' ? '' : platform}
+                              onChange={(e) => setPlatform(e.target.value)}
+                              placeholder="Platform name"
+                              className="w-1/2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
+                            />
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -333,22 +367,44 @@ export const HackathonManager: React.FC<HackathonManagerProps> = ({
                   {rounds.map((r, i) => (
                     <div key={r.id} className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3 relative">
                       <button type="button" onClick={() => setItemDeletePrompt({ name: r.name || `Round ${i + 1}`, type: 'round', action: () => setRounds(rounds.filter((_, idx) => idx !== i)) })} className="absolute top-3 right-3 text-red-500 hover:text-red-700"><Trash2 className="h-4 w-4" /></button>
-                      <div className="flex items-center gap-3 pr-8">
+                      <div className="flex flex-wrap items-center gap-3 pr-8">
                         <div className="font-bold text-xs whitespace-nowrap">Round {i + 1}</div>
-                        <input type="text" placeholder="Round Name" value={r.name} onChange={(e) => { const newR = [...rounds]; newR[i].name = e.target.value; setRounds(newR); }} className="flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium" />
+                        <input type="text" placeholder="Round Name" value={r.name} onChange={(e) => { const newR = [...rounds]; newR[i].name = e.target.value; setRounds(newR); }} className="w-1/4 min-w-[120px] rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium" />
+                        
                         <select
-                          value={r.type}
-                          onChange={(e) => { const newR = [...rounds]; newR[i].type = e.target.value as any; setRounds(newR); }}
-                          className="w-1/3 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium bg-white"
+                          value={r.mode}
+                          onChange={(e) => { const newR = [...rounds]; newR[i].mode = e.target.value as HackathonMode; setRounds(newR); }}
+                          className="w-1/5 min-w-[100px] rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium bg-white"
                         >
-                          <option value="Custom">Select Type...</option>
-                          <option value="Quiz">Quiz</option>
-                          <option value="Coding">Coding</option>
-                          <option value="PPT">PPT</option>
-                          <option value="Prototype">Prototype</option>
-                          <option value="Presentation">Presentation</option>
-                          <option value="Interview">Interview</option>
+                          <option value="Online">Online</option>
+                          <option value="Offline">Offline</option>
+                          <option value="Hybrid">Hybrid</option>
                         </select>
+
+                        <div className="flex flex-1 gap-2 min-w-[200px]">
+                          <select
+                            value={['Quiz', 'Coding', 'PPT', 'Prototype', 'Presentation', 'Interview'].includes(r.type) ? r.type : 'Custom'}
+                            onChange={(e) => { const newR = [...rounds]; newR[i].type = e.target.value as any; setRounds(newR); }}
+                            className={`${['Quiz', 'Coding', 'PPT', 'Prototype', 'Presentation', 'Interview'].includes(r.type) ? 'w-full' : 'w-1/2'} rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium bg-white`}
+                          >
+                            <option value="Quiz">Quiz</option>
+                            <option value="Coding">Coding</option>
+                            <option value="PPT">PPT</option>
+                            <option value="Prototype">Prototype</option>
+                            <option value="Presentation">Presentation</option>
+                            <option value="Interview">Interview</option>
+                            <option value="Custom">Custom</option>
+                          </select>
+                          {!['Quiz', 'Coding', 'PPT', 'Prototype', 'Presentation', 'Interview'].includes(r.type) && (
+                            <input
+                              type="text"
+                              placeholder="Type Submission format"
+                              value={r.type === 'Custom' ? '' : r.type}
+                              onChange={(e) => { const newR = [...rounds]; newR[i].type = e.target.value as any; setRounds(newR); }}
+                              className="w-1/2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium"
+                            />
+                          )}
+                        </div>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div className="flex flex-col gap-1">

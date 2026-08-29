@@ -88,6 +88,7 @@ export interface Hackathon {
   links: LinkItem[];
   team: TeamAssignment[];
   notes: NoteItem[];
+  platform?: string;
   isGameOver?: boolean;
 }
 
