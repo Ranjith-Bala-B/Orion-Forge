@@ -16,6 +16,29 @@ CREATE TABLE IF NOT EXISTS hackathons (
     is_game_over BOOLEAN DEFAULT false
 );
 
+-- Identifies approved Unstop imports and keeps the original source separate
+-- from normal manual entries. It contains no credentials or account tokens.
+ALTER TABLE hackathons ADD COLUMN IF NOT EXISTS platform TEXT;
+ALTER TABLE hackathons ADD COLUMN IF NOT EXISTS unstop_event_id TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS hackathons_unstop_event_id_unique
+    ON hackathons (unstop_event_id) WHERE unstop_event_id IS NOT NULL;
+
+-- Staging/read model populated only by an approved server-side Unstop adapter.
+-- The frontend gets SELECT access only and never contacts Unstop directly.
+CREATE TABLE IF NOT EXISTS unstop_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    source_event_id TEXT NOT NULL UNIQUE,
+    title TEXT NOT NULL,
+    event_type TEXT NOT NULL DEFAULT 'Event',
+    organizer TEXT,
+    mode TEXT,
+    registration_url TEXT,
+    official_url TEXT,
+    status TEXT NOT NULL DEFAULT 'Registered',
+    rounds JSONB NOT NULL DEFAULT '[]'::jsonb,
+    source_updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
 -- 3. hackathon_rounds
 CREATE TABLE IF NOT EXISTS hackathon_rounds (
     id TEXT PRIMARY KEY,
@@ -135,16 +158,19 @@ ALTER TABLE hackathon_team ENABLE ROW LEVEL SECURITY;
 ALTER TABLE hackathon_notes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vault_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vault_notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE unstop_events ENABLE ROW LEVEL SECURITY;
 
 DO $$ 
 DECLARE
     t TEXT;
-    tables TEXT[] := ARRAY['hackathons', 'hackathon_rounds', 'hackathon_tasks', 'hackathon_documents', 'hackathon_links', 'hackathon_team', 'hackathon_notes', 'vault_history', 'vault_notifications'];
+    tables TEXT[] := ARRAY['hackathons', 'hackathon_rounds', 'hackathon_tasks', 'hackathon_documents', 'hackathon_links', 'hackathon_team', 'hackathon_notes', 'vault_history', 'vault_notifications', 'unstop_events'];
 BEGIN
     FOREACH t IN ARRAY tables
     LOOP
+        EXECUTE format('DROP POLICY IF EXISTS "Allow anon full access" ON %I;', t);
+        EXECUTE format('CREATE POLICY "Allow anon full access" ON %I FOR ALL TO anon USING (true) WITH CHECK (true);', t);
         EXECUTE format('DROP POLICY IF EXISTS "Allow authenticated full access" ON %I;', t);
-        EXECUTE format('CREATE POLICY "Allow authenticated full access" ON %I FOR ALL TO authenticated USING (auth.role() = ''authenticated'') WITH CHECK (auth.role() = ''authenticated'');', t);
+        EXECUTE format('DROP POLICY IF EXISTS "Allow authenticated read of approved Unstop events" ON %I;', t);
     END LOOP;
 END $$;
 
@@ -160,7 +186,7 @@ $$;
 DO $$
 DECLARE
     t TEXT;
-    tables TEXT[] := ARRAY['hackathons', 'hackathon_rounds', 'hackathon_tasks', 'hackathon_documents', 'hackathon_links', 'hackathon_team', 'hackathon_notes', 'vault_history', 'vault_notifications'];
+    tables TEXT[] := ARRAY['hackathons', 'hackathon_rounds', 'hackathon_tasks', 'hackathon_documents', 'hackathon_links', 'hackathon_team', 'hackathon_notes', 'vault_history', 'vault_notifications', 'unstop_events'];
 BEGIN
     FOREACH t IN ARRAY tables
     LOOP

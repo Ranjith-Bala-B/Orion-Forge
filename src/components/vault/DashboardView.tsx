@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Calendar, CheckSquare, Clock, ArrowRight, AlertCircle, Activity, ChevronRight, X } from 'lucide-react';
@@ -28,7 +28,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     .reduce((acc, h) => acc + h.tasks.filter((t) => !t.completed).length, 0);
 
   // Upcoming deadlines (exclude game over)
-  const upcomingDeadlines: { hackathonName: string; roundName: string; date: string; hackathonId: string }[] = [];
+  const upcomingDeadlines: { hackathonName: string; roundName: string; date: string; time?: string; hackathonId: string }[] = [];
   hackathons.filter((h) => !h.isGameOver).forEach((h) => {
     h.rounds.forEach((r) => {
       if (!r.completed && r.status !== 'Closed') {
@@ -36,13 +36,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           hackathonName: h.name,
           roundName: r.name,
           date: r.deadlineDate,
+          time: r.deadlineTime,
           hackathonId: h.id,
         });
       }
     });
   });
-
-  upcomingDeadlines.sort((a, b) => a.date.localeCompare(b.date));
+  upcomingDeadlines.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
 
   const activeCountUp = useCountUp(activeCount, 1500, true);
   const completedCountUp = useCountUp(completedCount, 1500, true);
@@ -51,6 +51,45 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerType, setDrawerType] = useState<'active' | 'deadlines' | 'tasks' | 'completed' | null>(null);
+
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const getTimerInfo = (dateStr?: string, timeStr?: string) => {
+    if (!dateStr) return null;
+    const deadlineStr = `${dateStr}T${timeStr || '23:59:59'}`;
+    const deadline = new Date(deadlineStr);
+    if (isNaN(deadline.getTime())) return null;
+    
+    const diff = deadline.getTime() - currentTime.getTime();
+    if (diff < 0) return { text: 'Passed', color: 'bg-red-100 text-red-700 border-red-200' };
+    
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+    const mins = Math.floor((diff / 1000 / 60) % 60);
+    const secs = Math.floor((diff / 1000) % 60);
+    
+    let text = '';
+    let color = 'bg-slate-100 text-slate-700 border-slate-200';
+    
+    if (days > 0) {
+      text = `${days}d ${hours}h ${mins}m left`;
+      if (days <= 2) color = 'bg-amber-100 text-amber-700 border-amber-200';
+      else color = 'bg-emerald-100 text-emerald-700 border-emerald-200';
+    } else if (hours > 0) {
+      text = `${hours}h ${mins}m ${secs}s left`;
+      color = 'bg-red-100 text-red-700 border-red-200';
+    } else {
+      text = `${mins}m ${secs}s left`;
+      color = 'bg-red-100 text-red-700 border-red-200 animate-pulse';
+    }
+    
+    return { text, color };
+  };
 
   const openDrawer = (type: 'active' | 'deadlines' | 'tasks' | 'completed') => {
     setDrawerType(type);
@@ -205,6 +244,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </div>
 
                 <div className="flex items-center gap-4">
+                  {(() => {
+                    const timer = getTimerInfo(d.date, d.time);
+                    if (!timer) return null;
+                    return (
+                      <span className={`text-[10px] font-extrabold px-2 py-1 rounded-full border ${timer.color}`}>
+                        {timer.text}
+                      </span>
+                    );
+                  })()}
                   <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-200/80 group-hover:bg-[#3B82F6] group-hover:text-white transition-colors">
                     <Clock className="h-3.5 w-3.5 text-slate-600 group-hover:text-white" />
                     <span className="text-xs font-bold text-slate-900 group-hover:text-white">
@@ -265,10 +313,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
                 {drawerType === 'deadlines' && upcomingDeadlines.map((d, i) => (
                   <div key={i} className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-[#3B82F6] transition-colors cursor-pointer" onClick={() => { setDrawerOpen(false); onOpenHackathonWorkspace(d.hackathonId, 'rounds'); }}>
-                    <h4 className="font-bold text-slate-900">{d.hackathonName}</h4>
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-slate-900">{d.hackathonName}</h4>
+                      {(() => {
+                        const timer = getTimerInfo(d.date, d.time);
+                        if (!timer) return null;
+                        return (
+                          <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${timer.color}`}>
+                            {timer.text}
+                          </span>
+                        );
+                      })()}
+                    </div>
                     <p className="text-xs text-[#3B82F6] font-bold mt-1">Round: {d.roundName}</p>
                     <div className="flex items-center gap-2 mt-2 text-xs text-slate-600 font-medium">
-                      <Clock className="h-3 w-3" /> Due: {d.date}
+                      <Clock className="h-3 w-3" /> Due: {d.date} {d.time || '23:59'}
                     </div>
                   </div>
                 ))}

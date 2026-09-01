@@ -11,6 +11,7 @@ interface HackathonManagerProps {
   onSaveHackathon: (hackathon: Hackathon) => void;
   onDeleteHackathon: (id: string) => void;
   initialOpenModal?: boolean;
+  initialData?: Partial<Hackathon> | null;
 }
 
 export const HackathonManager: React.FC<HackathonManagerProps> = ({
@@ -19,6 +20,7 @@ export const HackathonManager: React.FC<HackathonManagerProps> = ({
   onSaveHackathon,
   onDeleteHackathon,
   initialOpenModal = false,
+  initialData = null,
 }) => {
   const [modalOpen, setModalOpen] = useState(initialOpenModal);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -26,35 +28,54 @@ export const HackathonManager: React.FC<HackathonManagerProps> = ({
   const [itemDeletePrompt, setItemDeletePrompt] = useState<{ name: string, type: string, action: () => void } | null>(null);
 
   React.useEffect(() => {
-    if (initialOpenModal && !modalOpen) {
-      openNewModal();
+    if (initialOpenModal) {
+      if (initialData) {
+        setName(initialData.name || '');
+        setType(initialData.type || 'Hackathon');
+        setOrganizer(initialData.organizer || '');
+        setMode(initialData.mode || 'Hybrid');
+        setPlatform(initialData.platform || 'Unstop');
+        setWebsiteUrl(initialData.websiteUrl || '');
+        setRegistrationUrl(initialData.registrationUrl || '');
+        setRounds(initialData.rounds || []);
+        setDescription(initialData.description || '');
+        setProblemStatement(initialData.problemStatement || '');
+        setUnstopEventId(initialData.unstopEventId || '');
+      }
+      setModalOpen(true);
     }
-  }, [initialOpenModal]);
+  }, [initialOpenModal, initialData]);
 
   // Form State
-  const [name, setName] = useState('');
-  const [type, setType] = useState<HackathonType>('Hackathon');
-  const [organizer, setOrganizer] = useState('');
-  const [mode, setMode] = useState<HackathonMode>('Hybrid');
-  const [platform, setPlatform] = useState('Unstop');
-  const [websiteUrl, setWebsiteUrl] = useState('');
-  const [registrationUrl, setRegistrationUrl] = useState('');
-  const [rounds, setRounds] = useState<Round[]>([]);
-  const [links, setLinks] = useState<LinkItem[]>([]);
-  const [documents, setDocuments] = useState<DocumentItem[]>([]);
+  const [name, setName] = useState(initialData?.name || '');
+  const [type, setType] = useState<HackathonType>(initialData?.type || 'Hackathon');
+  const [organizer, setOrganizer] = useState(initialData?.organizer || '');
+  const [mode, setMode] = useState<HackathonMode>(initialData?.mode || 'Hybrid');
+  const [platform, setPlatform] = useState(initialData?.platform || 'Unstop');
+  const [websiteUrl, setWebsiteUrl] = useState(initialData?.websiteUrl || '');
+  const [registrationUrl, setRegistrationUrl] = useState(initialData?.registrationUrl || '');
+  const [rounds, setRounds] = useState<Round[]>(initialData?.rounds || []);
+  const [links, setLinks] = useState<LinkItem[]>(initialData?.links || []);
+  const [documents, setDocuments] = useState<DocumentItem[]>(initialData?.documents || []);
+  const [description, setDescription] = useState(initialData?.description || '');
+  const [problemStatement, setProblemStatement] = useState(initialData?.problemStatement || '');
+  const [unstopEventId, setUnstopEventId] = useState(initialData?.unstopEventId || '');
 
   const openNewModal = () => {
     setEditingId(null);
-    setName('');
-    setType('Hackathon');
-    setOrganizer('');
-    setMode('Hybrid');
-    setPlatform('Unstop');
-    setWebsiteUrl('');
-    setRegistrationUrl('');
-    setRounds([]);
-    setLinks([]);
-    setDocuments([]);
+    setName(initialData?.name || '');
+    setType(initialData?.type || 'Hackathon');
+    setOrganizer(initialData?.organizer || '');
+    setMode(initialData?.mode || 'Hybrid');
+    setPlatform(initialData?.platform || 'Unstop');
+    setWebsiteUrl(initialData?.websiteUrl || '');
+    setRegistrationUrl(initialData?.registrationUrl || '');
+    setRounds(initialData?.rounds || []);
+    setLinks(initialData?.links || []);
+    setDocuments(initialData?.documents || []);
+    setDescription(initialData?.description || '');
+    setProblemStatement(initialData?.problemStatement || '');
+    setUnstopEventId(initialData?.unstopEventId || '');
     setModalOpen(true);
   };
 
@@ -70,6 +91,9 @@ export const HackathonManager: React.FC<HackathonManagerProps> = ({
     setRounds(h.rounds || []);
     setLinks(h.links || []);
     setDocuments(h.documents || []);
+    setDescription(h.description || '');
+    setProblemStatement(h.problemStatement || '');
+    setUnstopEventId(h.unstopEventId || '');
     setModalOpen(true);
   };
 
@@ -85,8 +109,9 @@ export const HackathonManager: React.FC<HackathonManagerProps> = ({
       platform,
       websiteUrl,
       registrationUrl,
-      problemStatement: editingId ? hackathons.find((h) => h.id === editingId)?.problemStatement || '' : '',
-      description: editingId ? hackathons.find((h) => h.id === editingId)?.description || '' : '',
+      problemStatement: problemStatement,
+      description: description,
+      unstopEventId: unstopEventId,
       status: 'Upcoming',
       createdAt: new Date().toISOString().split('T')[0],
       rounds: rounds,
@@ -115,13 +140,20 @@ export const HackathonManager: React.FC<HackathonManagerProps> = ({
           </div>
         </div>
 
-        <button
-          onClick={openNewModal}
-          className="relative z-10 inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-white text-[#1D4ED8] text-xs font-bold shadow-lg hover:bg-[#1D4ED8] hover:text-white border border-slate-200/80 active:scale-98 transition-all"
-        >
-          <Plus className="h-4 w-4" />
-          <span>New Hackathon</span>
-        </button>
+        <div className="flex items-center gap-6 relative z-10 mt-4 sm:mt-0">
+          <div className="flex flex-col items-center sm:items-end">
+            <span className="text-3xl font-black text-white leading-none drop-shadow-sm">{hackathons.length}</span>
+            <span className="text-[10px] font-extrabold text-white/90 uppercase tracking-widest mt-1">Total Hackathons</span>
+          </div>
+
+          <button
+            onClick={openNewModal}
+            className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-white text-[#1D4ED8] text-xs font-bold shadow-lg hover:bg-[#1D4ED8] hover:text-white border border-slate-200/80 active:scale-98 transition-all"
+          >
+            <Plus className="h-4 w-4" />
+            <span>New Hackathon</span>
+          </button>
+        </div>
       </div>
 
       {/* Hackathons Table / List View */}

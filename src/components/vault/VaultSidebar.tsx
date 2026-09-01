@@ -11,7 +11,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 
-export type VaultTab = 'dashboard' | 'calendar' | 'hackathons' | 'history' | 'cms' | 'settings';
+export type VaultTab = 'dashboard' | 'calendar' | 'hackathons' | 'connect' | 'history' | 'cms' | 'settings';
 
 interface VaultSidebarProps {
   activeTab: VaultTab;
@@ -24,6 +24,7 @@ const navItems: { id: VaultTab; label: string; icon: React.ReactNode }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="h-4 w-4" /> },
   { id: 'calendar', label: 'Calendar', icon: <CalendarDays className="h-4 w-4" /> },
   { id: 'hackathons', label: 'Hackathons', icon: <Trophy className="h-4 w-4" /> },
+  { id: 'connect', label: 'Connect Hackathons', icon: <Sparkles className="h-4 w-4" /> },
   { id: 'history', label: 'Forge History', icon: <History className="h-4 w-4" /> },
   { id: 'cms', label: 'CMS', icon: <FileCode className="h-4 w-4" /> },
   { id: 'settings', label: 'Settings', icon: <Settings className="h-4 w-4" /> },

@@ -10,6 +10,8 @@ interface CommandPaletteProps {
   hackathons: Hackathon[];
   history: HistoryEntry[];
   onSelectTab: (tab: VaultTab) => void;
+  onOpenHackathonWorkspace?: (id: string) => void;
+  onOpenHistoryWorkspace?: (id: string) => void;
 }
 
 export const CommandPalette: React.FC<CommandPaletteProps> = ({
@@ -18,6 +20,8 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   hackathons,
   history,
   onSelectTab,
+  onOpenHackathonWorkspace,
+  onOpenHistoryWorkspace,
 }) => {
   const [query, setQuery] = useState('');
 
@@ -144,7 +148,14 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                   {filteredHackathons.map((h) => (
                     <button
                       key={h.id}
-                      onClick={() => handleNavigate('hackathons')}
+                      onClick={() => {
+                        if (onOpenHackathonWorkspace) {
+                          onOpenHackathonWorkspace(h.id);
+                          onClose();
+                        } else {
+                          handleNavigate('hackathons');
+                        }
+                      }}
                       className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-slate-100 text-left transition-colors"
                     >
                       <div>
@@ -170,7 +181,14 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                   {filteredHistory.map((entry) => (
                     <button
                       key={entry.id}
-                      onClick={() => handleNavigate('history')}
+                      onClick={() => {
+                        if (onOpenHistoryWorkspace) {
+                          onOpenHistoryWorkspace(entry.id);
+                          onClose();
+                        } else {
+                          handleNavigate('history');
+                        }
+                      }}
                       className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-slate-100 text-left transition-colors"
                     >
                       <div>

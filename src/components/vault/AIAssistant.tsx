@@ -22,15 +22,16 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({ isOpen, onClose }) => 
     },
   ]);
   const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSend = (e: React.FormEvent) => {
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -40,16 +41,64 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({ isOpen, onClose }) => 
 
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
+    setIsLoading(true);
 
-    // Simulate AI response delay
-    setTimeout(() => {
-      const botResponse: Message = {
+    try {
+      const apiKey = import.meta.env.VITE_FEATHERLESS_API_KEY;
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+      const response = await fetch('https://api.featherless.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model: 'meta-llama/Meta-Llama-3.1-8B-Instruct',
+          messages: [
+            { role: 'system', content: 'You are Eva, the AI Assistant of Orion Forge. Be helpful and concise.' },
+            ...messages.map(m => ({
+              role: m.sender === 'user' ? 'user' : 'assistant',
+              content: m.text
+            })),
+            { role: 'user', content: userMessage.text }
+          ],
+        })
+      });
+      
+      clearTimeout(timeoutId);
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        console.error('API Error:', data);
+        throw new Error(data.error?.message || 'Invalid response from API');
+      }
+
+      if (data.choices && data.choices[0] && data.choices[0].message) {
+        const botResponse: Message = {
+          id: (Date.now() + 1).toString(),
+          sender: 'bot',
+          text: data.choices[0].message.content,
+        };
+        setMessages((prev) => [...prev, botResponse]);
+      } else {
+        throw new Error('Invalid response format from API');
+      }
+    } catch (error: any) {
+      console.error('Error fetching AI response:', error);
+      const errorResponse: Message = {
         id: (Date.now() + 1).toString(),
         sender: 'bot',
-        text: "🚧 Eva is currently under development. We’re forging Eva's capabilities behind the scenes. We’ll let you know once Eva is ready to assist you.",
+        text: `Error: ${error.message || "Sorry, I'm having trouble connecting right now. Please try again later."}`,
       };
-      setMessages((prev) => [...prev, botResponse]);
-    }, 600);
+      setMessages((prev) => [...prev, errorResponse]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -90,7 +139,7 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({ isOpen, onClose }) => 
                 className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${
+                  className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap ${
                     msg.sender === 'user'
                       ? 'bg-[#5B3DF5] text-white rounded-tr-sm'
                       : 'bg-white border border-slate-200 text-slate-700 rounded-tl-sm shadow-sm'
@@ -100,6 +149,17 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({ isOpen, onClose }) => 
                 </div>
               </div>
             ))}
+            
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-white border border-slate-200 text-slate-700 rounded-2xl rounded-tl-sm shadow-sm px-4 py-4 flex gap-1 items-center h-10">
+                  <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+              </div>
+            )}
+            
             <div ref={messagesEndRef} />
           </div>
 

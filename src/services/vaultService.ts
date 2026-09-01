@@ -59,6 +59,12 @@ export const vaultService = {
         } as Round;
       });
 
+      updatedRounds.sort((a: Round, b: Round) => {
+        if (a.startDate && b.startDate && a.startDate !== b.startDate) {
+          return a.startDate.localeCompare(b.startDate);
+        }
+        return a.name.localeCompare(b.name);
+      });
       return {
         id: h.id,
         name: h.name,
@@ -71,6 +77,8 @@ export const vaultService = {
         description: h.description,
         status: h.status,
         createdAt: h.created_at,
+        platform: h.platform,
+        unstopEventId: h.unstop_event_id,
         isGameOver: h.is_game_over,
         rounds: updatedRounds,
         tasks: (h.tasks || []).map((t: any) => ({
@@ -101,13 +109,30 @@ export const vaultService = {
   },
 
   saveHackathonItem: async (hackathon: Hackathon): Promise<void> => {
-    // 1. Upsert Hackathon
-    await supabase.from('hackathons').upsert({
+    let { error: hackathonError } = await supabase.from('hackathons').upsert({
       id: hackathon.id, name: hackathon.name, type: hackathon.type, organizer: hackathon.organizer,
       mode: hackathon.mode, website_url: hackathon.websiteUrl, registration_url: hackathon.registrationUrl,
       problem_statement: hackathon.problemStatement, description: hackathon.description,
-      status: hackathon.status, created_at: hackathon.createdAt, is_game_over: hackathon.isGameOver
+      status: hackathon.status, created_at: hackathon.createdAt || null, is_game_over: hackathon.isGameOver,
+      platform: hackathon.platform || null, unstop_event_id: hackathon.unstopEventId || null
     });
+
+    // Fallback for PGRST204 (Stale schema cache or missing columns in Supabase)
+    if (hackathonError && hackathonError.code === 'PGRST204') {
+      console.warn("Schema cache is stale or missing columns. Retrying without platform and unstop_event_id.");
+      const { error: retryError } = await supabase.from('hackathons').upsert({
+        id: hackathon.id, name: hackathon.name, type: hackathon.type, organizer: hackathon.organizer,
+        mode: hackathon.mode, website_url: hackathon.websiteUrl, registration_url: hackathon.registrationUrl,
+        problem_statement: hackathon.problemStatement, description: hackathon.description,
+        status: hackathon.status, created_at: hackathon.createdAt || null, is_game_over: hackathon.isGameOver
+      });
+      hackathonError = retryError;
+    }
+
+    if (hackathonError) {
+      console.error("Hackathon upsert error:", hackathonError);
+      throw new Error(hackathonError.message);
+    }
 
     // 2. Delete existing child records and re-insert (simplest sync approach)
     await Promise.all([
@@ -123,22 +148,22 @@ export const vaultService = {
     if (hackathon.rounds?.length) {
       inserts.push(supabase.from('hackathon_rounds').insert(hackathon.rounds.map(r => ({
         id: r.id, hackathon_id: hackathon.id, name: r.name, type: r.type, mode: r.mode,
-        start_date: r.startDate, start_time: r.startTime, deadline_date: r.deadlineDate,
-        deadline_time: r.deadlineTime, submission_details: r.submissionDetails,
-        submission_requirements: r.submissionRequirements, result_date: r.resultDate,
+        start_date: r.startDate || null, start_time: r.startTime || null, deadline_date: r.deadlineDate || null,
+        deadline_time: r.deadlineTime || null, submission_details: r.submissionDetails,
+        submission_requirements: r.submissionRequirements, result_date: r.resultDate || null,
         status: r.status, remarks: r.remarks, completed: r.completed
       }))));
     }
     if (hackathon.tasks?.length) {
       inserts.push(supabase.from('hackathon_tasks').insert(hackathon.tasks.map(t => ({
         id: t.id, hackathon_id: hackathon.id, title: t.title, priority: t.priority,
-        assigned_member: t.assignedMember, due_date: t.dueDate, completed: t.completed
+        assigned_member: t.assignedMember, due_date: t.dueDate || null, completed: t.completed
       }))));
     }
     if (hackathon.documents?.length) {
       inserts.push(supabase.from('hackathon_documents').insert(hackathon.documents.map(d => ({
         id: d.id, hackathon_id: hackathon.id, name: d.name, type: d.type, url: d.url,
-        size: d.size, uploaded_at: d.uploadedAt, category: d.category
+        size: d.size, uploaded_at: d.uploadedAt || null, category: d.category
       }))));
     }
     if (hackathon.links?.length) {
@@ -155,11 +180,16 @@ export const vaultService = {
     if (hackathon.notes?.length) {
       inserts.push(supabase.from('hackathon_notes').insert(hackathon.notes.map(n => ({
         id: n.id, hackathon_id: hackathon.id, title: n.title, content: n.content,
-        updated_at: n.updatedAt
+        updated_at: n.updatedAt || null
       }))));
     }
     
-    await Promise.all(inserts);
+    const insertResults = await Promise.all(inserts);
+    const insertError = insertResults.find((result: any) => result.error)?.error;
+    if (insertError) {
+      console.error("Insert error in child tables:", insertError);
+      throw new Error(insertError.message);
+    }
   },
 
   deleteHackathonItem: async (id: string): Promise<void> => {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, X, ArrowRight, AlertCircle, CheckCircle, Sparkles } from 'lucide-react';
 import { Hackathon, Round } from '../../types/vault';
@@ -12,6 +12,7 @@ interface DateDeadlineInfo {
   hackathonId: string;
   hackathonName: string;
   round: Round;
+  isGameOver?: boolean;
 }
 
 export const BubbleCalendar: React.FC<BubbleCalendarProps> = ({
@@ -22,6 +23,45 @@ export const BubbleCalendar: React.FC<BubbleCalendarProps> = ({
   const [selectedYear, setSelectedYear] = useState<number>(currentDate.getFullYear());
   const [selectedMonthIndex, setSelectedMonthIndex] = useState<number>(currentDate.getMonth());
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
+
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const getTimerInfo = (dateStr?: string, timeStr?: string) => {
+    if (!dateStr) return null;
+    const deadlineStr = `${dateStr}T${timeStr || '23:59:59'}`;
+    const deadline = new Date(deadlineStr);
+    if (isNaN(deadline.getTime())) return null;
+    
+    const diff = deadline.getTime() - currentTime.getTime();
+    if (diff < 0) return { text: 'Passed', color: 'bg-red-100 text-red-700 border-red-200' };
+    
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+    const mins = Math.floor((diff / 1000 / 60) % 60);
+    const secs = Math.floor((diff / 1000) % 60);
+    
+    let text = '';
+    let color = 'bg-slate-100 text-slate-700 border-slate-200';
+    
+    if (days > 0) {
+      text = `${days}d ${hours}h ${mins}m ${secs}s left`;
+      if (days <= 2) color = 'bg-amber-100 text-amber-700 border-amber-200';
+      else color = 'bg-emerald-100 text-emerald-700 border-emerald-200';
+    } else if (hours > 0) {
+      text = `${hours}h ${mins}m ${secs}s left`;
+      color = 'bg-red-100 text-red-700 border-red-200';
+    } else {
+      text = `${mins}m ${secs}s left`;
+      color = 'bg-red-100 text-red-700 border-red-200 animate-pulse';
+    }
+    
+    return { text, color };
+  };
 
   const monthsShort = [
     { code: 'JAN', name: 'January', index: 0 },
@@ -59,6 +99,7 @@ export const BubbleCalendar: React.FC<BubbleCalendarProps> = ({
           hackathonId: h.id,
           hackathonName: h.name,
           round: r,
+          isGameOver: h.isGameOver,
         });
       }
     });
@@ -215,7 +256,8 @@ export const BubbleCalendar: React.FC<BubbleCalendarProps> = ({
                 const isToday = dateStr === todayStr;
                 const isPast = dateStr < todayStr;
                 const deadlines = deadlinesByDate[dateStr] || [];
-                const count = deadlines.length;
+                const activeDeadlines = deadlines.filter(d => !d.isGameOver);
+                const count = activeDeadlines.length;
 
                 // Full Light Color Body + Dark Matching Border Styles
                 let bubbleBg = 'bg-white border border-slate-200 shadow-[0_6px_14px_rgba(0,0,0,0.08)] hover:shadow-lg';
@@ -263,14 +305,14 @@ export const BubbleCalendar: React.FC<BubbleCalendarProps> = ({
                     </button>
 
                     {/* Hover Tooltip */}
-                    {count > 0 && (
+                    {deadlines.length > 0 && (
                       <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-40 w-52 rounded-2xl bg-slate-950 border border-slate-700 text-white p-3 shadow-2xl text-left">
                         <span className="text-[10px] font-extrabold text-[#38BDF8] uppercase tracking-wider block mb-1">
-                          {count} Deadline{count > 1 ? 's' : ''} Scheduled
+                          {count} Active Deadline{count !== 1 ? 's' : ''}
                         </span>
                         <ul className="space-y-1 text-[11px]">
                           {deadlines.map((d, i) => (
-                            <li key={i} className="truncate font-medium text-slate-200">
+                            <li key={i} className={`truncate font-medium ${d.isGameOver ? 'text-red-400 line-through opacity-70' : 'text-slate-200'}`}>
                               • {d.hackathonName} ({d.round.name})
                             </li>
                           ))}
@@ -338,13 +380,29 @@ export const BubbleCalendar: React.FC<BubbleCalendarProps> = ({
                         <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-[#5B3DF5]/10 text-[#5B3DF5]">
                           {item.round.type} Round
                         </span>
-                        <span className="text-xs font-semibold text-slate-500">
-                          Due: {item.round.deadlineTime || '23:59'}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-slate-500">
+                            Due: {item.round.deadlineTime || '23:59'}
+                          </span>
+                          {!item.isGameOver && (() => {
+                            const timer = getTimerInfo(item.round.deadlineDate, item.round.deadlineTime);
+                            if (!timer) return null;
+                            return (
+                              <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${timer.color}`}>
+                                {timer.text}
+                              </span>
+                            );
+                          })()}
+                        </div>
                       </div>
 
-                      <h3 className="font-heading text-base font-bold text-slate-900">
-                        {item.hackathonName}
+                      <h3 className="font-heading text-base font-bold text-slate-900 flex items-center gap-2">
+                        <span>{item.hackathonName}</span>
+                        {item.isGameOver && (
+                          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">
+                            GAME OVER
+                          </span>
+                        )}
                       </h3>
                       <p className="text-xs font-semibold text-[#5B3DF5]">
                         Round: {item.round.name}
@@ -357,15 +415,20 @@ export const BubbleCalendar: React.FC<BubbleCalendarProps> = ({
                       )}
 
                       <div className="pt-2 flex items-center justify-between border-t border-slate-200/60">
-                        <span className={`text-xs font-bold ${
-                          item.round.status === 'Completed'
+                        {(() => {
+                          const isPassed = getTimerInfo(item.round.deadlineDate, item.round.deadlineTime)?.text === 'Passed';
+                          const displayStatus = (isPassed && item.round.status !== 'Completed') ? 'Closed' : item.round.status;
+                          const statusColor = displayStatus === 'Completed'
                             ? 'text-emerald-600'
-                            : item.round.status === 'Closed'
+                            : displayStatus === 'Closed'
                             ? 'text-red-600'
-                            : 'text-amber-600'
-                        }`}>
-                          Status: {item.round.status}
-                        </span>
+                            : 'text-amber-600';
+                          return (
+                            <span className={`text-xs font-bold ${statusColor}`}>
+                              Status: {displayStatus}
+                            </span>
+                          );
+                        })()}
 
                         <button
                           onClick={() => {

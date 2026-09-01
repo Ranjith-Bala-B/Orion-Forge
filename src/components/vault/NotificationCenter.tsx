@@ -1,12 +1,13 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Bell, AlertTriangle, FileUp, CheckCircle, Check } from 'lucide-react';
-import { NotificationItem } from '../../types/vault';
+import { NotificationItem, Hackathon } from '../../types/vault';
 
 interface NotificationCenterProps {
   isOpen: boolean;
   onClose: () => void;
   notifications: NotificationItem[];
+  hackathons?: Hackathon[];
   onMarkRead: (id: string) => void;
 }
 
@@ -14,9 +15,46 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   isOpen,
   onClose,
   notifications,
+  hackathons = [],
   onMarkRead,
 }) => {
   if (!isOpen) return null;
+
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+  const todayDeadlines = hackathons
+    .filter(h => !h.isGameOver)
+    .flatMap(h => h.rounds
+      .filter(r => !r.completed && r.status !== 'Closed' && r.deadlineDate === todayStr)
+      .map(r => ({
+        id: `today-dl-${h.id}-${r.id}`,
+        title: `Deadline Today: ${h.name}`,
+        message: `Round '${r.name}' is due today at ${r.deadlineTime || '23:59'}.`,
+        timestamp: 'Today',
+        type: 'deadline' as const,
+        read: false,
+      }))
+    );
+
+  const tomorrowDeadlines = hackathons
+    .filter(h => !h.isGameOver)
+    .flatMap(h => h.rounds
+      .filter(r => !r.completed && r.status !== 'Closed' && r.deadlineDate === tomorrowStr)
+      .map(r => ({
+        id: `tmrw-dl-${h.id}-${r.id}`,
+        title: `Deadline Tomorrow: ${h.name}`,
+        message: `Round '${r.name}' is due tomorrow at ${r.deadlineTime || '23:59'}.`,
+        timestamp: 'Tomorrow',
+        type: 'deadline' as const,
+        read: false,
+      }))
+    );
+
+  const allNotifications = [...todayDeadlines, ...tomorrowDeadlines, ...notifications];
 
   return (
     <AnimatePresence>
@@ -54,12 +92,12 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
 
           {/* List */}
           <div className="p-6 space-y-4 flex-1 overflow-y-auto">
-            {notifications.length === 0 ? (
+            {allNotifications.length === 0 ? (
               <div className="text-center py-12 text-slate-400 text-xs">
                 No notifications right now.
               </div>
             ) : (
-              notifications.map((item) => (
+              allNotifications.map((item) => (
                 <div
                   key={item.id}
                   className={`p-4 rounded-2xl border transition-all ${

@@ -17,6 +17,7 @@ import { HistoryWorkspace } from '../components/vault/HistoryWorkspace';
 import { ForgeHistoryView } from '../components/vault/ForgeHistoryView';
 import { OrionForgeCMS } from '../components/vault/OrionForgeCMS';
 import { VaultSettingsView } from '../components/vault/VaultSettingsView';
+import { UnstopRegisteredEvents } from '../components/vault/UnstopRegisteredEvents';
 
 interface ForgeVaultPageProps {
   onNavigate?: (path: string) => void;
@@ -36,6 +37,7 @@ export const ForgeVaultPage: React.FC<ForgeVaultPageProps> = ({ onNavigate }) =>
     markNotificationRead,
     updateSettings,
     refreshData,
+    unstopEvents,
   } = useVault();
 
   const commandPalette = useCommandPalette();
@@ -48,9 +50,21 @@ export const ForgeVaultPage: React.FC<ForgeVaultPageProps> = ({ onNavigate }) =>
   const [cmsInitialSection, setCmsInitialSection] = useState<'hero' | 'team' | 'projects' | 'achievements' | 'stats' | 'footer'>('hero');
   const [cmsInitialDrawer, setCmsInitialDrawer] = useState<'project' | 'achievement' | null>(null);
   const [hackathonInitialModal, setHackathonInitialModal] = useState(false);
+  const [hackathonInitialData, setHackathonInitialData] = useState<Partial<any> | null>(null);
+
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+  const activeDeadlinesCount = hackathons
+    .filter(h => !h.isGameOver)
+    .flatMap(h => h.rounds.filter(r => !r.completed && r.status !== 'Closed' && (r.deadlineDate === todayStr || r.deadlineDate === tomorrowStr)))
+    .length;
 
   // Unread notification count
-  const unreadNotificationsCount = notifications.filter((n) => !n.read).length;
+  const unreadNotificationsCount = notifications.filter((n) => !n.read).length + activeDeadlinesCount;
 
   if (!isAuthenticated) {
     return <AuthScreen onLogin={login} />;
@@ -77,6 +91,7 @@ export const ForgeVaultPage: React.FC<ForgeVaultPageProps> = ({ onNavigate }) =>
             setActiveHistoryWorkspaceId(null);
             setCmsInitialDrawer(null);
             setHackathonInitialModal(false);
+            setHackathonInitialData(null);
             setActiveTab(tab);
           }}
           onLogout={logout}
@@ -93,6 +108,7 @@ export const ForgeVaultPage: React.FC<ForgeVaultPageProps> = ({ onNavigate }) =>
               setActiveHistoryWorkspaceId(null);
               setCmsInitialDrawer(null);
               setHackathonInitialModal(false);
+              setHackathonInitialData(null);
               setActiveTab(tab);
             }}
             onOpenCommandPalette={commandPalette.open}
@@ -146,13 +162,31 @@ export const ForgeVaultPage: React.FC<ForgeVaultPageProps> = ({ onNavigate }) =>
               )}
 
               {activeTab === 'hackathons' && (
-                <HackathonManager
-                  hackathons={hackathons}
-                  onOpenWorkspace={(id) => setActiveWorkspaceId(id)}
-                  onSaveHackathon={saveHackathon}
-                  onDeleteHackathon={deleteHackathon}
-                  initialOpenModal={hackathonInitialModal}
-                />
+                <div className="space-y-8">
+                  <HackathonManager
+                    hackathons={hackathons}
+                    onOpenWorkspace={(id) => setActiveWorkspaceId(id)}
+                    onSaveHackathon={saveHackathon}
+                    onDeleteHackathon={deleteHackathon}
+                    initialOpenModal={hackathonInitialModal}
+                    initialData={hackathonInitialData}
+                  />
+                </div>
+              )}
+
+              {activeTab === 'connect' && (
+                <div className="space-y-8">
+                  <UnstopRegisteredEvents
+                    hackathons={hackathons}
+                    unstopEvents={unstopEvents}
+                    onImport={async (hackathon) => { await saveHackathon(hackathon); await refreshData(); }}
+                    onPreview={(data) => {
+                      setHackathonInitialData(data);
+                      setHackathonInitialModal(true);
+                      setActiveTab('hackathons');
+                    }}
+                  />
+                </div>
               )}
 
               {activeTab === 'history' && (
@@ -190,10 +224,12 @@ export const ForgeVaultPage: React.FC<ForgeVaultPageProps> = ({ onNavigate }) =>
           setActiveWorkspaceId(null);
           setCmsInitialDrawer(null);
           setHackathonInitialModal(false);
+          setHackathonInitialData(null);
           setActiveTab(tab);
         }}
         onOpenNewHackathonModal={() => {
           setActiveWorkspaceId(null);
+          setHackathonInitialData(null);
           setHackathonInitialModal(true);
           setActiveTab('hackathons');
         }}
@@ -229,7 +265,16 @@ export const ForgeVaultPage: React.FC<ForgeVaultPageProps> = ({ onNavigate }) =>
         history={history}
         onSelectTab={(tab) => {
           setActiveWorkspaceId(null);
+          setActiveHistoryWorkspaceId(null);
           setActiveTab(tab);
+        }}
+        onOpenHackathonWorkspace={(id) => {
+          setActiveWorkspaceId(id);
+          setActiveTab('hackathons');
+        }}
+        onOpenHistoryWorkspace={(id) => {
+          setActiveHistoryWorkspaceId(id);
+          setActiveTab('history');
         }}
       />
 
@@ -238,6 +283,7 @@ export const ForgeVaultPage: React.FC<ForgeVaultPageProps> = ({ onNavigate }) =>
         isOpen={notificationsOpen}
         onClose={() => setNotificationsOpen(false)}
         notifications={notifications}
+        hackathons={hackathons}
         onMarkRead={markNotificationRead}
       />
     </div>

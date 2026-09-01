@@ -568,9 +568,9 @@ export const HackathonWorkspace: React.FC<HackathonWorkspaceProps> = ({
         <div className="ml-auto flex items-center pr-1">
           <button
             onClick={() => setLegacyModalOpen(true)}
-            disabled={isArchived}
+            disabled={isArchived || !hackathon.isGameOver}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-amber-500/20 transition-all active:scale-95 ${
-              isArchived 
+              (isArchived || !hackathon.isGameOver)
                 ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' 
                 : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:shadow-orange-500/30'
             }`}

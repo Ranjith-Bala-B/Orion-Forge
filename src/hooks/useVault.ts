@@ -7,17 +7,22 @@ export const useVault = () => {
   const [hackathons, setHackathons] = useState<Hackathon[]>([]);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [unstopEvents, setUnstopEvents] = useState<any[]>([]);
   const [settings, setSettings] = useState<VaultSettings>(() => vaultService.getSettings());
 
   const refreshData = async () => {
-    const [h, hist, notifs] = await Promise.all([
+    const [h, hist, notifs, { data: unstopData }] = await Promise.all([
       vaultService.getHackathons(),
       vaultService.getHistory(),
-      vaultService.getNotifications()
+      vaultService.getNotifications(),
+      supabase.from('unstop_events').select('*')
     ]);
     setHackathons(h);
     setHistory(hist);
     setNotifications(notifs);
+    if (unstopData) {
+      setUnstopEvents(unstopData);
+    }
     setSettings(vaultService.getSettings());
   };
 
@@ -43,6 +48,12 @@ export const useVault = () => {
   }, []);
 
   const saveHackathon = async (item: Hackathon) => {
+    const existing = item.unstopEventId
+      ? hackathons.find(h => h.unstopEventId === item.unstopEventId)
+      : undefined;
+    if (existing && existing.id !== item.id) {
+      throw new Error('This Unstop event has already been added.');
+    }
     // Optimistic update
     setHackathons(prev => {
       const idx = prev.findIndex(h => h.id === item.id);
@@ -54,7 +65,12 @@ export const useVault = () => {
       return [item, ...prev];
     });
 
-    await vaultService.saveHackathonItem(item);
+    try {
+      await vaultService.saveHackathonItem(item);
+    } catch (error) {
+      await refreshData();
+      throw error;
+    }
     
     // Auto-update history entry if it exists
     const historyEntry = history.find(h => h.hackathonId === item.id);
@@ -141,6 +157,7 @@ export const useVault = () => {
     hackathons,
     history,
     notifications,
+    unstopEvents,
     settings,
     saveHackathon,
     deleteHackathon,
