@@ -89,8 +89,7 @@ export interface Hackathon {
   team: TeamAssignment[];
   notes: NoteItem[];
   platform?: string;
-  /** Stable ID supplied by the approved Unstop integration. Never a credential. */
-  unstopEventId?: string;
+
   isGameOver?: boolean;
 }
 

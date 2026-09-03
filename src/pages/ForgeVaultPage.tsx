@@ -17,7 +17,6 @@ import { HistoryWorkspace } from '../components/vault/HistoryWorkspace';
 import { ForgeHistoryView } from '../components/vault/ForgeHistoryView';
 import { OrionForgeCMS } from '../components/vault/OrionForgeCMS';
 import { VaultSettingsView } from '../components/vault/VaultSettingsView';
-import { UnstopRegisteredEvents } from '../components/vault/UnstopRegisteredEvents';
 
 interface ForgeVaultPageProps {
   onNavigate?: (path: string) => void;
@@ -37,7 +36,6 @@ export const ForgeVaultPage: React.FC<ForgeVaultPageProps> = ({ onNavigate }) =>
     markNotificationRead,
     updateSettings,
     refreshData,
-    unstopEvents,
   } = useVault();
 
   const commandPalette = useCommandPalette();
@@ -174,20 +172,6 @@ export const ForgeVaultPage: React.FC<ForgeVaultPageProps> = ({ onNavigate }) =>
                 </div>
               )}
 
-              {activeTab === 'connect' && (
-                <div className="space-y-8">
-                  <UnstopRegisteredEvents
-                    hackathons={hackathons}
-                    unstopEvents={unstopEvents}
-                    onImport={async (hackathon) => { await saveHackathon(hackathon); await refreshData(); }}
-                    onPreview={(data) => {
-                      setHackathonInitialData(data);
-                      setHackathonInitialModal(true);
-                      setActiveTab('hackathons');
-                    }}
-                  />
-                </div>
-              )}
 
               {activeTab === 'history' && (
                 <ForgeHistoryView

@@ -78,7 +78,6 @@ export const vaultService = {
         status: h.status,
         createdAt: h.created_at,
         platform: h.platform,
-        unstopEventId: h.unstop_event_id,
         isGameOver: h.is_game_over,
         rounds: updatedRounds,
         tasks: (h.tasks || []).map((t: any) => ({
@@ -114,12 +113,12 @@ export const vaultService = {
       mode: hackathon.mode, website_url: hackathon.websiteUrl, registration_url: hackathon.registrationUrl,
       problem_statement: hackathon.problemStatement, description: hackathon.description,
       status: hackathon.status, created_at: hackathon.createdAt || null, is_game_over: hackathon.isGameOver,
-      platform: hackathon.platform || null, unstop_event_id: hackathon.unstopEventId || null
+      platform: hackathon.platform || null
     });
 
     // Fallback for PGRST204 (Stale schema cache or missing columns in Supabase)
     if (hackathonError && hackathonError.code === 'PGRST204') {
-      console.warn("Schema cache is stale or missing columns. Retrying without platform and unstop_event_id.");
+      console.warn("Schema cache is stale or missing columns. Retrying without platform.");
       const { error: retryError } = await supabase.from('hackathons').upsert({
         id: hackathon.id, name: hackathon.name, type: hackathon.type, organizer: hackathon.organizer,
         mode: hackathon.mode, website_url: hackathon.websiteUrl, registration_url: hackathon.registrationUrl,

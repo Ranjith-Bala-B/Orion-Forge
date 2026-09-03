@@ -34,13 +34,12 @@ export const HackathonManager: React.FC<HackathonManagerProps> = ({
         setType(initialData.type || 'Hackathon');
         setOrganizer(initialData.organizer || '');
         setMode(initialData.mode || 'Hybrid');
-        setPlatform(initialData.platform || 'Unstop');
+        setPlatform(initialData.platform || 'Custom');
         setWebsiteUrl(initialData.websiteUrl || '');
         setRegistrationUrl(initialData.registrationUrl || '');
         setRounds(initialData.rounds || []);
         setDescription(initialData.description || '');
         setProblemStatement(initialData.problemStatement || '');
-        setUnstopEventId(initialData.unstopEventId || '');
       }
       setModalOpen(true);
     }
@@ -51,7 +50,7 @@ export const HackathonManager: React.FC<HackathonManagerProps> = ({
   const [type, setType] = useState<HackathonType>(initialData?.type || 'Hackathon');
   const [organizer, setOrganizer] = useState(initialData?.organizer || '');
   const [mode, setMode] = useState<HackathonMode>(initialData?.mode || 'Hybrid');
-  const [platform, setPlatform] = useState(initialData?.platform || 'Unstop');
+  const [platform, setPlatform] = useState(initialData?.platform || 'Custom');
   const [websiteUrl, setWebsiteUrl] = useState(initialData?.websiteUrl || '');
   const [registrationUrl, setRegistrationUrl] = useState(initialData?.registrationUrl || '');
   const [rounds, setRounds] = useState<Round[]>(initialData?.rounds || []);
@@ -59,7 +58,6 @@ export const HackathonManager: React.FC<HackathonManagerProps> = ({
   const [documents, setDocuments] = useState<DocumentItem[]>(initialData?.documents || []);
   const [description, setDescription] = useState(initialData?.description || '');
   const [problemStatement, setProblemStatement] = useState(initialData?.problemStatement || '');
-  const [unstopEventId, setUnstopEventId] = useState(initialData?.unstopEventId || '');
 
   const openNewModal = () => {
     setEditingId(null);
@@ -67,7 +65,7 @@ export const HackathonManager: React.FC<HackathonManagerProps> = ({
     setType(initialData?.type || 'Hackathon');
     setOrganizer(initialData?.organizer || '');
     setMode(initialData?.mode || 'Hybrid');
-    setPlatform(initialData?.platform || 'Unstop');
+    setPlatform(initialData?.platform || 'Custom');
     setWebsiteUrl(initialData?.websiteUrl || '');
     setRegistrationUrl(initialData?.registrationUrl || '');
     setRounds(initialData?.rounds || []);
@@ -75,7 +73,6 @@ export const HackathonManager: React.FC<HackathonManagerProps> = ({
     setDocuments(initialData?.documents || []);
     setDescription(initialData?.description || '');
     setProblemStatement(initialData?.problemStatement || '');
-    setUnstopEventId(initialData?.unstopEventId || '');
     setModalOpen(true);
   };
 
@@ -85,7 +82,7 @@ export const HackathonManager: React.FC<HackathonManagerProps> = ({
     setType(h.type || 'Hackathon');
     setOrganizer(h.organizer);
     setMode(h.mode);
-    setPlatform(h.platform || 'Unstop');
+    setPlatform(h.platform || 'Custom');
     setWebsiteUrl(h.websiteUrl);
     setRegistrationUrl(h.registrationUrl);
     setRounds(h.rounds || []);
@@ -93,7 +90,6 @@ export const HackathonManager: React.FC<HackathonManagerProps> = ({
     setDocuments(h.documents || []);
     setDescription(h.description || '');
     setProblemStatement(h.problemStatement || '');
-    setUnstopEventId(h.unstopEventId || '');
     setModalOpen(true);
   };
 
@@ -111,7 +107,6 @@ export const HackathonManager: React.FC<HackathonManagerProps> = ({
       registrationUrl,
       problemStatement: problemStatement,
       description: description,
-      unstopEventId: unstopEventId,
       status: 'Upcoming',
       createdAt: new Date().toISOString().split('T')[0],
       rounds: rounds,
@@ -351,11 +346,11 @@ export const HackathonManager: React.FC<HackathonManagerProps> = ({
                         <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Event Platform</label>
                         <div className="flex gap-2">
                           <select
-                            value={['Unstop', 'Hack2Skill', 'Devpost', 'Naukri', 'Devfolio', 'Hackculture'].includes(platform) ? platform : 'Custom'}
+                            value={['Hack2Skill', 'Devpost', 'Naukri', 'Devfolio', 'Hackculture'].includes(platform) ? platform : 'Custom'}
                             onChange={(e) => setPlatform(e.target.value)}
-                            className={`${['Unstop', 'Hack2Skill', 'Devpost', 'Naukri', 'Devfolio', 'Hackculture'].includes(platform) ? 'w-full' : 'w-1/2'} rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#3B82F6]`}
+                            className={`${['Hack2Skill', 'Devpost', 'Naukri', 'Devfolio', 'Hackculture'].includes(platform) ? 'w-full' : 'w-1/2'} rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#3B82F6]`}
                           >
-                            <option value="Unstop">Unstop</option>
+
                             <option value="Hack2Skill">Hack2Skill</option>
                             <option value="Devpost">Devpost</option>
                             <option value="Naukri">Naukri</option>
@@ -363,7 +358,7 @@ export const HackathonManager: React.FC<HackathonManagerProps> = ({
                             <option value="Hackculture">Hackculture</option>
                             <option value="Custom">Custom</option>
                           </select>
-                          {!['Unstop', 'Hack2Skill', 'Devpost', 'Naukri', 'Devfolio', 'Hackculture'].includes(platform) && (
+                          {!['Hack2Skill', 'Devpost', 'Naukri', 'Devfolio', 'Hackculture'].includes(platform) && (
                             <input
                               type="text"
                               required
